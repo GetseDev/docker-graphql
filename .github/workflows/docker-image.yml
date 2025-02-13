@@ -14,11 +14,13 @@ jobs:
 
     steps:
 
+    # REVISION DE CÓDIGO
     - name: Checkout code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0 
 
+    # CONFIGURACIÖN DE SEMANTIC 
     - name: Git Semantic Version
       uses: PaulHatch/semantic-version@v4.0.3
       with: 
@@ -27,25 +29,29 @@ jobs:
         format: "${major}.${minor}.${patch}-prerelease${increment}"
       id: version
     
+    # CONEXION CON DOCKER LOGIN
     - name: Docker login
       env:
         DOCKER_USER: ${{ secrets.DOCKER_USER }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-        NEW_VERSION: ${{ steps.version.outputs.version }}
       run: |
         docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-        echo "==================================="
-        echo "New version: $NEW_VERSION"
-        echo "==================================="
-    
-    # - name: Build Docker Image
-    #   run : |
-    #     docker build -t getsemani/docker-graphql:0.0.1 .
-    #     docker build -t getsemani/docker-graphql:latest .
 
-    # - name: Push Docker Image
-    #   run : |
-    #     docker push getsemani/docker-graphql:0.0.1
-    #     docker push getsemani/docker-graphql:latest
-    # - name: Build the Docker image
-    #   run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+    # CONSTRUIR LA IMAGEN DE DOCKER
+    - name: Build Docker Image
+      env: 
+        NEW_VERSION: ${{ steps.version.outputs.version }}
+
+      run : |
+        docker build -t getsemani/docker-graphql:$NEW_VERSION .
+        docker build -t getsemani/docker-graphql:latest .
+
+    # PUBLICAR LA IMAGEN DE DOCKER
+    - name: Push Docker Image
+      env: 
+        NEW_VERSION: ${{ steps.version.outputs.version }}
+      run : |
+        docker push getsemani/docker-graphql:$NEW_VERSION
+        docker push getsemani/docker-graphql:latest
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
